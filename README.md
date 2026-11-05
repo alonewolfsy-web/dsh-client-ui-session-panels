@@ -41,7 +41,7 @@ node scripts/switch-to-git.mjs            # 默认 ~/.dsh/profiles/desktop，可
 ```
 
 或用应用内：侧栏**插件** → **添加插件** → 填
-`https://github.com/alonewolfsy-web/dsh-client-ui-session-panels#v0.2.1`
+`https://github.com/alonewolfsy-web/dsh-client-ui-session-panels#v0.2.2`
 
 脚本做四件事：`git ls-remote` 确认 tag 存在（不存在绝不碰 profile）→ `pnpm add github:alonewolfsy-web/dsh-client-ui-session-panels#v0.2.1` → 校验「清单 / 落盘副本 / 版本号」三层一致 → 删掉遗留的 `vendor` tgz。
 
