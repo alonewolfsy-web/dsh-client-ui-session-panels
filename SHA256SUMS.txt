@@ -1,1 +1,1 @@
-9953116ff06e2ef10a2acfe69b3a1b1fc052f156ff35cbd633aa7acaa4b4a868 *dsh-client-ui-session-panels-0.2.1.tgz
+e0b831b9b9d617a9601f2854c41539d241db3ec398bbcf85c229d84bae79b6f1 *dsh-client-ui-session-panels-0.2.2.tgz
