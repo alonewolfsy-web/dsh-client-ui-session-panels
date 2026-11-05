@@ -16,6 +16,9 @@
 - DSH Desktop **≥ 0.2.1-rc.3**（`package.json` 的 `dsh.engines.dsh`）。
 - 构建用 Node 18 以上。
 
+- ![Uploading 1.jpg…]()
+
+
 ## 先构建
 
 ```bash
