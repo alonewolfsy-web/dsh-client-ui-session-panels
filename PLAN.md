@@ -240,3 +240,10 @@
 - 坑 3：bash 双引号里的 release body 反引号会被命令替换，body 走文件传。
 - 坑 4：已安装状态下在 UI 重复安装 → pnpm `Already up to date`/added 0 → 管理器 diff 识别不到包，
   报「无法从依赖变更中确定安装了哪一个包」。属误报，已写入 README。
+- 步骤 26（v0.2.2）：拖拽反馈收窄——ghost 只克隆标题栏（`event.currentTarget`，剥掉 data-dragging/data-drop、
+  margin 归零），并强制 chevron 转 -90° 呈折叠态；目标标题栏的 `data-drop` 高亮**整体移除**（接口字段
+  `HeaderDragProps.dropTarget` 一并删），落点只剩 gap 里的插入线。标签页 label 缩为「卡片」（guide 保留全名，
+  tab 窄会截断）。门禁 unit15/drag9/smoke13/tsc 全绿；发 v0.2.2 tag（commit 330aafd）并 switch-to-git，
+  落盘 client.js 58820B、lock 钉 330aafd。
+  经验：**给用户看的"拖拽手感"要区分三种语义——被搬运物（ghost）、落点（插入线）、禁止态；把落点信息
+  画在目标自身上会和 ghost 重叠，读成"预览"，只留一条线最清楚。**
