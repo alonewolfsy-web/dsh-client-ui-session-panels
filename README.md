@@ -55,6 +55,8 @@ node scripts/switch-to-git.mjs            # 默认 ~/.dsh/profiles/desktop，可
 
 脚本做四件事：`git ls-remote` 确认 tag 存在（不存在绝不碰 profile）→ `pnpm add github:alonewolfsy-web/dsh-client-ui-session-panels#v0.2.1` → 校验「清单 / 落盘副本 / 版本号」三层一致 → 删掉遗留的 `vendor` tgz。
 
+> **已知误报**：插件已装好后再在 UI 里点一次安装，会报「无法从依赖变更中确定安装了哪一个包」。原因是 pnpm 看到 `Already up to date`、依赖零变更，管理器无法从前后 diff 里识别包名。这不是安装失败——升级请打新 tag 后跑 `switch:git`；要用 UI 装，先卸载再装。
+
 ### 2. 升级
 
 改 `package.json` 的 `version` → `npm run build` → 提交 → `git tag vX.Y.Z` → `git push origin main --tags` → 再跑一次 `switch:git`。
