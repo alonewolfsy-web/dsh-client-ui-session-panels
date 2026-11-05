@@ -54,10 +54,10 @@ async function refreshVendorTarball(profile, srcPkg) {
   const manifest = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'))
   const spec = manifest.dependencies?.[srcPkg.name]
   if (typeof spec !== 'string' || !spec.replace(/\\/g, '/').includes('vendor/')) {
-    console.log('  vendor  registry/link spec — nothing to refresh')
+    console.log('  vendor  git/link spec — nothing to refresh')
     if (typeof spec === 'string' && !/^(file|link):/.test(spec)) {
-      console.log('  note    app-side pnpm restores the PUBLISHED version on the next start;')
-      console.log('          direct deploys do not survive it — publish a new version instead.')
+      console.log('  note    app-side pnpm restores the PUBLISHED tag on the next start;')
+      console.log('          direct deploys do not survive it — push a new tag instead.')
     }
     return
   }

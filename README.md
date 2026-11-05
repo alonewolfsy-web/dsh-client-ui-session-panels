@@ -61,7 +61,7 @@ node scripts/switch-to-git.mjs            # 默认 ~/.dsh/profiles/desktop，可
 
 ### 3. 发布产物（可选）
 
-`npm pack` 的 tgz 可附到 GitHub Release，便于离线转发；安装仍以 tag 为准。
+`npm pack` 的 tgz 已附到 [Releases](https://github.com/alonewolfsy-web/dsh-client-ui-session-panels/releases)，便于离线转发；安装仍以 tag 为准。
 
 ## 开发迭代（不是安装方式）
 
