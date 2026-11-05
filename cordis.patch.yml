@@ -1,0 +1,9 @@
+# Bundle patch: adds this plugin's row to the profile roster.
+#
+# The package declares both halves in package.json: the node half (exports ".")
+# registers the MCP status/reconnect routes, and `dsh.client` makes the browser
+# half (exports "./client") load in the web GUI, where it registers its
+# right-sidebar tab.
+- insert:
+    - id: ui-session-panels
+      name: 'dsh-client-ui-session-panels'

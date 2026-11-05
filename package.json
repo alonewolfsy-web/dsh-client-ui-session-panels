@@ -1,0 +1,68 @@
+{
+  "name": "dsh-client-ui-session-panels",
+  "version": "0.2.1",
+  "description": "Panel-style session suite for the DSH right sidebar: context pressure with cache analytics, turn stats, skills in flight, MCP server control. Title bars reorder cards by pointer drag with a live ghost and insertion line. Re-authored from openchamber's context panel and work-status panel against native DSH data surfaces.",
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "unit": "node scripts/unit.mjs",
+    "drag": "node scripts/drag.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc --noEmit",
+    "deploy": "node scripts/build.mjs && node scripts/deploy.mjs",
+    "switch:git": "node scripts/switch-to-git.mjs"
+  },
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.1-rc.3"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-session"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.25.0",
+    "jsdom": "^24.1.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "sidebar",
+    "session",
+    "panels"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alonewolfsy-web/dsh-client-ui-session-panels.git"
+  },
+  "license": "MIT"
+}
