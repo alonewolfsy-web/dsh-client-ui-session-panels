@@ -226,3 +226,17 @@
 - deploy.mjs 清掉 install.ps1 引用；vendor 刷新逻辑保留，仅作旧 `file:` profile 的过渡兼容（检测到 registry spec 自动跳过）。
 - 产物：`npm pack` 6 文件 23.3 kB（LICENSE/README/cordis.patch.yml/lib×2/package.json），
   sha256 `3fc37be6…2d38`，SHA256SUMS.txt 已更新并通过 `sha256sum -c`。
+
+## 步骤 25：改为 GitHub 分发（2026-11-05）
+- 网络：github.com 一度不可达（api/codeload 可达）→ 先用 Git API 建仓 + blobs→tree→commit→refs 推送；
+  网络恢复后 force-push 本地真实历史，main 与 tag 对齐。
+- 仓库：https://github.com/alonewolfsy-web/dsh-client-ui-session-panels（public）
+- 分发：git tag 安装。pnpm 把 git spec 解析成 **codeload tarball URL + commit**，lockfile 内容寻址 → 启动不重解包。
+- 脚本：`switch-to-registry.mjs` → `switch-to-git.mjs`（ls-remote 查 tag → pnpm add github:…#vX → 三层校验 → 删 vendor tgz）。
+- 实测：临时目录 pnpm add 成功；profile 切换成功（manifest=github:…#v0.2.1、installed 0.2.1、vendor 清空、
+  lock 钉 08f2e01）；Release v0.2.1 + tgz 附件 23355B，下载复核 sha256 9953116f 一致。
+- 坑 1：空仓库 API 建 blob 返回 409，需先用 Contents API 初始化一次。
+- 坑 2：force 更新 tag 后按 tag 查 release 会 404，改用 release id。
+- 坑 3：bash 双引号里的 release body 反引号会被命令替换，body 走文件传。
+- 坑 4：已安装状态下在 UI 重复安装 → pnpm `Already up to date`/added 0 → 管理器 diff 识别不到包，
+  报「无法从依赖变更中确定安装了哪一个包」。属误报，已写入 README。

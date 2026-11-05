@@ -49,7 +49,7 @@ let tabDefinition = null
 const slotRegistrations = []
 
 const zhDict = {
-  'type.label': '右侧面板卡片插件',
+  'type.label': '卡片',
   'guide.title': '右侧面板卡片插件',
   'guide.description': '上下文压力、缓存分析、轮次统计与 MCP 连接',
   'manage.open': '管理卡片',
@@ -144,7 +144,7 @@ console.log(`  ok 3: zh/en dictionaries registered and key-complete (${zhKeys.le
 assert.ok(tabDefinition, 'tab type never registered')
 assert.equal(tabDefinition.id, 'dsh-client-ui-session-panels')
 assert.equal(tabDefinition.kind, 'session-panels')
-assert.equal(tabDefinition.title(), '右侧面板卡片插件')
+assert.equal(tabDefinition.title(), '卡片')
 assert.equal(tabDefinition.guide[0].description(), '上下文压力、缓存分析、轮次统计与 MCP 连接')
 console.log('  ok 4: tab type registered with kind + localized guide')
 

@@ -46,8 +46,6 @@ export interface DragProps {
 export interface HeaderDragProps {
   /** This card is being dragged by its title bar. */
   dragging: boolean
-  /** Another card would land on this one if the pointer dropped now. */
-  dropTarget: boolean
   onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void
   onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void
   onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void
@@ -143,7 +141,6 @@ export const CollapsibleSection: React.FC<{
       <div
         className="osp-titlebar"
         data-dragging={headerDrag?.dragging || undefined}
-        data-drop={headerDrag?.dropTarget || undefined}
         onPointerDown={headerDrag?.onPointerDown}
         onPointerMove={headerDrag?.onPointerMove}
         onPointerUp={headerDrag?.onPointerUp}

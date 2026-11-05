@@ -31,16 +31,13 @@ export const PANEL_CSS = `
 
 .osp-section { display: flex; flex-direction: column; position: relative; }
 /* Cards render inside display:contents slots (the slots carry the drag-target
-   id), so adjacency and the drop highlight key off the slot, not the section. */
+   id), so adjacency keys off the slot, not the section. */
 .osp-card-slot { display: contents; }
 .osp-card-slot + .osp-card-slot > .osp-section { margin-top: 18px; }
-.osp-titlebar[data-drop='true'] {
-  border-color: var(--dsw-alias-brand-primary, #4d6bfe);
-  box-shadow: inset 0 0 0 1px var(--dsw-alias-brand-primary, #4d6bfe);
-}
 
-/* Pointer drag feedback: the lifted original dims in place; the insertion line
-   sits in the gap on the side of the target the pointer will land. */
+/* Pointer drag feedback: the lifted original dims in place, and the only
+   landing cue is the insertion line in the gap on the side the pointer will
+   land — the target bar itself gets no preview state. */
 .osp-card-slot[data-lifting='true'] > .osp-section { opacity: 0.4; }
 .osp-card-slot[data-drop-side] > .osp-section::after {
   content: '';
@@ -55,23 +52,24 @@ export const PANEL_CSS = `
 .osp-card-slot[data-drop-side='before'] > .osp-section::after { top: -10px; }
 .osp-card-slot[data-drop-side='after'] > .osp-section::after { bottom: -10px; }
 
-/* The drag ghost: a fixed clone carried above everything, moved by transform
-   only so it tracks the pointer without layout. */
+/* The drag ghost: the folded card's title bar, fixed above everything and
+   moved by transform only so it tracks the pointer without layout. */
 .osp-ghost {
   position: fixed;
   z-index: 9999;
   margin: 0;
   pointer-events: none;
-  max-height: 340px;
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1, light-dark(#ffffff, #1c1c1c));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
   will-change: transform;
 }
-.osp-ghost > .osp-section {
+.osp-ghost > .osp-titlebar {
   background: var(--dsw-alias-bg-layer-1, light-dark(#ffffff, #1c1c1c));
-  border-radius: 12px;
+  cursor: grabbing;
 }
+/* The carried bar reads as folded: its chevron points right, not down. */
+.osp-ghost .osp-chevron svg { transform: rotate(-90deg); }
 
 .osp-heading {
   display: flex;

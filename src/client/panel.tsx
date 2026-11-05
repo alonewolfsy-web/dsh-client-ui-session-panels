@@ -256,8 +256,8 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   }, [])
 
   /**
-   * Title-bar pointer drag: press → move ≥6px arms the drag → a ghost clone of
-   * the card follows the pointer while the original dims in place → the half
+   * Title-bar pointer drag: press → move ≥6px arms the drag → a ghost of the
+   * title bar follows the pointer while the original dims in place → the half
    * of the card under the pointer names the insertion point (drawn as a line
    * in the gap) → release commits the move. Pointer capture is taken only once
    * armed: capturing on the press would retarget the trailing click to the bar
@@ -267,7 +267,6 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   const headerDragOf = React.useCallback(
     (id: CardId): HeaderDragProps => ({
       dragging: dragging === id,
-      dropTarget: dropTarget === id,
       onPointerDown: (event) => {
         if (event.button !== 0) return
         swallowClick.current = false
@@ -286,15 +285,20 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
           } catch {
             /* capture unsupported: moves still land while the pointer stays inside */
           }
-          // The ghost is a static clone taken before React re-renders the
-          // dragging look, so it reads as a lifted card, not a dimmed one.
-          const origin = event.currentTarget.closest<HTMLElement>('[data-card-id]')
-          const section = origin?.querySelector<HTMLElement>('.osp-section') ?? origin
-          const rect = section?.getBoundingClientRect()
+          // The ghost carries the title bar only — the folded card, not a
+          // full-height preview. It is cloned before React re-renders the
+          // dragging look, and any leftover drop state is stripped so the
+          // carried bar never reads as a landing marker.
+          const bar = event.currentTarget
+          const rect = bar.getBoundingClientRect()
           const ghost = document.createElement('div')
           ghost.className = 'osp-ghost'
-          if (section) ghost.appendChild(section.cloneNode(true))
-          if (rect && rect.width > 0) {
+          const carried = bar.cloneNode(true) as HTMLElement
+          carried.removeAttribute('data-dragging')
+          carried.removeAttribute('data-drop')
+          carried.style.marginBottom = '0'
+          ghost.appendChild(carried)
+          if (rect.width > 0) {
             ghost.style.left = `${rect.left}px`
             ghost.style.top = `${rect.top}px`
             ghost.style.width = `${rect.width}px`
@@ -357,7 +361,7 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
         setDropSide(null)
       },
     }),
-    [dragging, dropTarget, layout.hidden, commitMoveRelative, clearGhost],
+    [dragging, layout.hidden, commitMoveRelative, clearGhost],
   )
 
   const dragPropsOf = React.useCallback(

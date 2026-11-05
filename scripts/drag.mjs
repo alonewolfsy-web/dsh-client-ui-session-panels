@@ -13,8 +13,9 @@
  *   - pointer capture must NOT be taken on pointerdown: capture retargets the
  *     trailing click to the bar, which kills the fold chevron. Capture is only
  *     allowed once the drag arms.
- *   - an armed drag must produce a ghost clone that follows the pointer, lift
- *     the original, and name the insertion side on the target slot.
+ *   - an armed drag must produce a title-bar ghost that follows the pointer,
+ *     lift the original, and name the insertion side on the target slot —
+ *     the target bar itself must stay unmarked.
  */
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
@@ -152,18 +153,20 @@ ok('initial mount: four slots in the default order, no layout written yet')
   await until(() => hits, 1, 'hit-testing never ran during the drag')
   await until(() => bar.getAttribute('data-dragging'), 'true', 'drag never armed (no dragging flag)')
   assert.equal(captureCalls, 1, 'an armed drag must take pointer capture exactly once')
-  await until(() => barOf('mcp').getAttribute('data-drop'), 'true', 'mcp never showed the drop highlight')
   await until(
     () => container.querySelector('[data-card-id="mcp"]').getAttribute('data-drop-side'),
     'before',
     'target slot never named the insertion side',
   )
+  assert.equal(barOf('mcp').hasAttribute('data-drop'), false, 'the target bar must carry no landing preview')
   await until(
     () => container.querySelector('[data-card-id="context"]').getAttribute('data-lifting'),
     'true',
     'the lifted card never left a placeholder state',
   )
   await until(() => ghostOf() !== null, true, 'an armed drag never produced a ghost')
+  assert.ok(ghostOf()?.querySelector('.osp-titlebar'), 'the ghost must carry the title bar')
+  assert.equal(ghostOf()?.querySelector('.osp-section, .osp-row, .osp-list'), null, 'the ghost must not preview the card body')
   fire(bar, 'pointermove', { clientX: 10, clientY: 312 })
   await until(() => ghostOf()?.style.transform, 'translate(0px, 302px)', 'ghost did not follow the pointer')
   fire(bar, 'pointerup', { clientX: 10, clientY: 312 })
@@ -184,7 +187,6 @@ ok('initial mount: four slots in the default order, no layout written yet')
     'drag did not reorder the DOM',
   )
   assert.equal(barOf('context').hasAttribute('data-dragging'), false, 'dragging flag stuck after release')
-  assert.equal(barOf('mcp').hasAttribute('data-drop'), false, 'drop highlight stuck after release')
   assert.equal(container.querySelector('[data-card-id="mcp"]').hasAttribute('data-drop-side'), false, 'side indicator stuck after release')
   ok('drag: ghost follows the pointer, context lands before mcp, persists, cleans up')
 }

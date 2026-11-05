@@ -1,7 +1,9 @@
 /** Locale dictionaries owned by this plugin. Namespace: `sessionPanels`. */
 
 export const zh: Record<string, string> = {
-  'type.label': '右侧面板卡片插件',
+  // The tab strip is narrow: a short label keeps it from truncating. The
+  // add-tab guide keeps the full name, where there is room to explain itself.
+  'type.label': '卡片',
   'guide.title': '右侧面板卡片插件',
   'guide.description': '上下文压力、缓存分析、轮次统计与 MCP 连接',
   'manage.open': '管理卡片',
@@ -41,7 +43,7 @@ export const zh: Record<string, string> = {
 }
 
 export const en: Record<string, string> = {
-  'type.label': 'Right panel cards',
+  'type.label': 'Cards',
   'guide.title': 'Right panel cards',
   'guide.description': 'Context pressure, cache analytics, turn stats and MCP connections',
   'manage.open': 'Manage cards',
