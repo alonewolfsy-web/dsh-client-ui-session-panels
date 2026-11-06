@@ -1,8 +1,7 @@
 /**
- * Row and section vocabulary for the session panels, ported from the
- * session-cards card set (which ported openchamber's work-status primitives):
- * every readout is a labelled row (icon, name, trailing value), sections carry
- * a heading and are separated by space alone.
+ * Section vocabulary for the session panels, ported from the session-cards card
+ * set: a section whose title bar folds the body and doubles as the drag handle,
+ * plus the meter and the empty state its bodies draw with.
  */
 import * as React from 'react'
 import { ChevronIcon } from './icons'
@@ -167,23 +166,6 @@ export const CollapsibleSection: React.FC<{
   )
 }
 
-/** A single readout. The value sits hard right; the label truncates before it. */
-export const Row: React.FC<{
-  icon?: React.ReactNode
-  label: React.ReactNode
-  value?: React.ReactNode
-  muted?: boolean
-  title?: string
-}> = ({ icon, label, value, muted, title }) => (
-  <div className="osp-row" title={title}>
-    <span className="osp-icon">{icon}</span>
-    <span className="osp-label" style={muted ? { color: 'var(--dsw-alias-label-tertiary, inherit)' } : undefined}>
-      {label}
-    </span>
-    {value !== undefined && value !== null ? <span className="osp-value">{value}</span> : null}
-  </div>
-)
-
 /** Context-window fill, drawn under its row rather than inside it. */
 export const Meter: React.FC<{ percent: number; color: string }> = ({ percent, color }) => (
   <div className="osp-meter">
@@ -191,33 +173,6 @@ export const Meter: React.FC<{ percent: number; color: string }> = ({ percent, c
       className="osp-meter-fill"
       style={{ width: `${Math.max(0, Math.min(100, percent))}%`, backgroundColor: color }}
     />
-  </div>
-)
-
-export interface MeterSegment {
-  id: string
-  /** Share of the whole window, 0–100. */
-  percent: number
-  color: string
-  label: string
-}
-
-/**
- * One bar split by category — the context composition at a glance. Segments are
- * laid out by share, so the bar's total fill is the window's occupancy.
- */
-export const StackedMeter: React.FC<{ segments: MeterSegment[] }> = ({ segments }) => (
-  <div className="osp-meter osp-meter-stacked">
-    {segments.map((segment) =>
-      segment.percent <= 0 ? null : (
-        <span
-          key={segment.id}
-          className="osp-meter-seg"
-          style={{ width: `${Math.min(100, segment.percent)}%`, backgroundColor: segment.color }}
-          title={`${segment.label} ${segment.percent.toFixed(1)}%`}
-        />
-      ),
-    )}
   </div>
 )
 

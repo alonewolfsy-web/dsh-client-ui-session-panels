@@ -60,7 +60,7 @@ const mod = loaded.factory((name) => hostModules[name] ?? {})
 
 /* ---- recording ctx (same shape smoke uses; no remote → effects resolve benignly) ---- */
 const t = (key, params) => {
-  const zh = { 'section.context': '上下文', 'section.turns': '轮次统计', 'section.skills': '正在调用', 'section.mcp': 'MCP 服务器', 'titlebar.dragHint': '拖动标题栏调整卡片顺序', 'summary.turns': '{count} 轮', 'summary.cache': '命中 {percent}', 'skills.running': '运行中', empty: '空' }
+  const zh = { 'section.gauge': '统计', 'section.skills': '正在调用', 'section.mcp': 'MCP 服务器', 'titlebar.dragHint': '拖动标题栏调整卡片顺序', 'skills.running': '运行中', empty: '空' }
   let s = zh[key] ?? key
   if (params) for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(String(v))
   return s
@@ -128,13 +128,13 @@ const stubRect = (id, top, height) => {
 const unstubRect = (id) => { delete sectionOf(id).getBoundingClientRect }
 
 /* ---- 1: initial order is the default, and nothing is written until a move ---- */
-assert.deepEqual(slotsOf().map((el) => el.getAttribute('data-card-id')), ['context', 'turns', 'skills', 'mcp'])
+assert.deepEqual(slotsOf().map((el) => el.getAttribute('data-card-id')), ['gauge', 'skills', 'mcp'])
 assert.equal(localStorage.getItem('dsh.sessionPanels.layout.v1'), null, 'mount must not write layout')
-ok('initial mount: four slots in the default order, no layout written yet')
+ok('initial mount: three slots in the default order, no layout written yet')
 
 /* ---- 1b: a press must not take pointer capture (the chevron killer) ---- */
 {
-  const bar = barOf('context')
+  const bar = barOf('gauge')
   fire(bar, 'pointerdown', { clientX: 5, clientY: 5 })
   fire(bar, 'pointermove', { clientX: 7, clientY: 6 }) // under the threshold
   fire(bar, 'pointerup', { clientX: 7, clientY: 6 })
@@ -142,9 +142,9 @@ ok('initial mount: four slots in the default order, no layout written yet')
   ok('timing: a press below the threshold never takes pointer capture')
 }
 
-/* ---- 2: drag the context bar onto the mcp card's upper half ---- */
+/* ---- 2: drag the gauge bar onto the mcp card's upper half ---- */
 {
-  const bar = barOf('context')
+  const bar = barOf('gauge')
   let hits = 0
   document.elementFromPoint = () => { hits++; return container.querySelector('[data-card-id="mcp"]') }
   stubRect('mcp', 300, 40) // midpoint 320: a pointer above it inserts before mcp
@@ -160,13 +160,13 @@ ok('initial mount: four slots in the default order, no layout written yet')
   )
   assert.equal(barOf('mcp').hasAttribute('data-drop'), false, 'the target bar must carry no landing preview')
   await until(
-    () => container.querySelector('[data-card-id="context"]').getAttribute('data-lifting'),
+    () => container.querySelector('[data-card-id="gauge"]').getAttribute('data-lifting'),
     'true',
     'the lifted card never left a placeholder state',
   )
   await until(() => ghostOf() !== null, true, 'an armed drag never produced a ghost')
   assert.ok(ghostOf()?.querySelector('.osp-titlebar'), 'the ghost must carry the title bar')
-  assert.equal(ghostOf()?.querySelector('.osp-section, .osp-row, .osp-list'), null, 'the ghost must not preview the card body')
+  assert.equal(ghostOf()?.querySelector('.osp-section, .osp-gauge, .osp-list'), null, 'the ghost must not preview the card body')
   fire(bar, 'pointermove', { clientX: 10, clientY: 312 })
   await until(() => ghostOf()?.style.transform, 'translate(0px, 302px)', 'ghost did not follow the pointer')
   fire(bar, 'pointerup', { clientX: 10, clientY: 312 })
@@ -178,22 +178,22 @@ ok('initial mount: four slots in the default order, no layout written yet')
   await until(() => ghostOf(), null, 'ghost survived the release')
   await until(
     () => JSON.parse(localStorage.getItem('dsh.sessionPanels.layout.v1') ?? 'null')?.order.join(','),
-    'turns,skills,context,mcp',
-    'drag did not persist the move (context lands before mcp)',
+    'skills,gauge,mcp',
+    'drag did not persist the move (gauge lands before mcp)',
   )
   await until(
     () => slotsOf().map((el) => el.getAttribute('data-card-id')).join(','),
-    'turns,skills,context,mcp',
+    'skills,gauge,mcp',
     'drag did not reorder the DOM',
   )
-  assert.equal(barOf('context').hasAttribute('data-dragging'), false, 'dragging flag stuck after release')
+  assert.equal(barOf('gauge').hasAttribute('data-dragging'), false, 'dragging flag stuck after release')
   assert.equal(container.querySelector('[data-card-id="mcp"]').hasAttribute('data-drop-side'), false, 'side indicator stuck after release')
-  ok('drag: ghost follows the pointer, context lands before mcp, persists, cleans up')
+  ok('drag: ghost follows the pointer, gauge lands before mcp, persists, cleans up')
 }
 
 /* ---- 2b: the lower half of a card means "insert after" ---- */
 {
-  const bar = barOf('turns')
+  const bar = barOf('skills')
   document.elementFromPoint = () => container.querySelector('[data-card-id="mcp"]')
   stubRect('mcp', 300, 40) // midpoint 320: a pointer below it inserts after mcp
   fire(bar, 'pointerdown', { clientX: 10, clientY: 10 })
@@ -208,34 +208,34 @@ ok('initial mount: four slots in the default order, no layout written yet')
   unstubRect('mcp')
   await until(
     () => JSON.parse(localStorage.getItem('dsh.sessionPanels.layout.v1') ?? 'null')?.order.join(','),
-    'skills,context,mcp,turns',
+    'gauge,mcp,skills',
     'lower-half drop did not insert after the target',
   )
   ok('sides: dropping on the lower half inserts after the target card')
 }
 
 /* ---- 3: the click that follows a drag must not fold the card ---- */
-fire(btnOf('context'), 'click')
-await until(() => btnOf('context').getAttribute('aria-expanded'), 'true', 'post-drag click folded the card')
+fire(btnOf('gauge'), 'click')
+await until(() => btnOf('gauge').getAttribute('aria-expanded'), 'true', 'post-drag click folded the card')
 ok('guard: the click trailing a drag is swallowed, the card stays open')
 
 /* ---- 4: a plain click (no movement) folds as usual ---- */
 {
-  const bar = barOf('turns')
+  const bar = barOf('mcp')
   fire(bar, 'pointerdown', { clientX: 5, clientY: 5 })
   fire(bar, 'pointermove', { clientX: 7, clientY: 6 }) // 2.2px: under the threshold
   fire(bar, 'pointerup', { clientX: 7, clientY: 6 })
-  fire(btnOf('turns'), 'click')
-  await until(() => btnOf('turns').getAttribute('aria-expanded'), 'false', 'plain click did not fold')
+  fire(btnOf('mcp'), 'click')
+  await until(() => btnOf('mcp').getAttribute('aria-expanded'), 'false', 'plain click did not fold')
   // and the order never moved
-  assert.deepEqual(JSON.parse(localStorage.getItem('dsh.sessionPanels.layout.v1')).order, ['skills', 'context', 'mcp', 'turns'])
+  assert.deepEqual(JSON.parse(localStorage.getItem('dsh.sessionPanels.layout.v1')).order, ['gauge', 'mcp', 'skills'])
   ok('threshold: a sub-threshold press stays a click and folds the card')
 }
 
 /* ---- 5: dragging onto empty space is a no-op ---- */
 {
   const before = localStorage.getItem('dsh.sessionPanels.layout.v1')
-  const bar = barOf('context')
+  const bar = barOf('gauge')
   fire(bar, 'pointerdown', { clientX: 0, clientY: 0 })
   document.elementFromPoint = () => null
   fire(bar, 'pointermove', { clientX: 40, clientY: 400 })

@@ -18,7 +18,7 @@
  * `layout.ts`, so the same body renders in play mode and in manage mode.
  */
 import * as React from 'react'
-import { fmtDuration, fmtPercent, fmtRate, fmtTokens } from './format'
+import { fmtMillions, fmtPercentInt, fmtTokens, fmtTps } from './format'
 import {
   fetchMcpServers,
   reconnectMcpServer,
@@ -28,18 +28,15 @@ import {
   type ClientContext,
   type McpServer,
 } from './folds'
-import { BoltIcon, CoinIcon, DonutIcon, GaugeIcon, PulseIcon, ServerIcon } from './icons'
+import { BoltIcon, DonutIcon, ServerIcon } from './icons'
 import { type CardId, type CardLayout, moveCard, moveCardRelative, readLayout, writeLayout } from './layout'
-import { computeCacheHit, contextSegments, pressurePercent } from './metrics'
+import { computeCacheHit, pressurePercent } from './metrics'
 import {
-  type MeterSegment,
   CollapsibleSection,
   type DragProps,
   type HeaderDragProps,
   Empty,
   Meter,
-  Row,
-  StackedMeter,
 } from './primitives'
 import { ensureStyles } from './styles'
 
@@ -75,7 +72,6 @@ const SEGMENT_COLORS = {
   system: 'var(--dsw-alias-label-tertiary, #8a8f98)',
   tools: 'var(--dsw-alias-state-warn-primary, #d9982b)',
   messages: 'var(--dsw-alias-brand-primary, #4d6bfe)',
-  free: 'var(--dsw-alias-border-l2, rgba(0,0,0,.08))',
 }
 
 /** Subscribe to the session's event stream and reduce it to work in flight. */
@@ -158,11 +154,37 @@ function toneOf(server: McpServer): 'live' | 'warn' | 'error' | 'idle' {
   return 'idle'
 }
 
-/** Per-step time to first token, as the turns row spells it. */
-function ttft(stats: { ttftMs?: number; ttftSteps?: number } | undefined, fmt: (ms: number) => string): string {
-  if (!stats?.ttftMs || !stats.ttftSteps) return '—'
-  return fmt(stats.ttftMs / stats.ttftSteps)
+/** Legend figures carry a tilde: the split is an estimate, the total is not. */
+function approx(value: number | undefined): string {
+  return typeof value === 'number' && Number.isFinite(value) ? `~${fmtTokens(value)}` : '—'
 }
+
+/** What the session has moved through the model: uncached input + cache read + output. */
+function totalTokens(usage: Record<string, unknown> | null | undefined): number | undefined {
+  if (!usage) return undefined
+  const parts = ['uncachedInputTokens', 'cacheReadTokens', 'outputTokens'].map((key) => {
+    const value = usage[key]
+    return typeof value === 'number' && Number.isFinite(value) ? value : null
+  })
+  if (parts.every((value) => value === null)) return undefined
+  return parts.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+}
+
+/** Average first-token latency in seconds, the popover's own wording: 3.2 秒. */
+function avgFirstToken(stats: { ttftMs?: number; ttftSteps?: number } | undefined, t: Translator): string {
+  if (!stats?.ttftMs || !stats.ttftSteps) return '—'
+  return `${(stats.ttftMs / stats.ttftSteps / 1000).toFixed(1)}${t('unit.seconds')}`
+}
+
+/** One labelled figure of the context gauge: caption above, value below. */
+const GaugeCell: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="osp-cell">
+    <span className="osp-cell-label" title={label}>
+      {label}
+    </span>
+    <span className="osp-cell-value">{value}</span>
+  </div>
+)
 
 /**
  * The panel body.
@@ -383,25 +405,23 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   )
 
   const hit = computeCacheHit(usage)
-  const segments = contextSegments(pressure, breakdown)
   const percent = pressurePercent(pressure)
+  /** Everything the session has put through the model, in tokens. */
+  const spent = totalTokens(usage)
 
   const hasContext = Boolean(pressure || usage || breakdown)
-  const hasStats = Boolean(stats)
   const hasActivity = activity.skills.length > 0 || activity.calls.length > 0
   const hasServers = mcp.servers.length > 0
 
   const titles: Record<CardId, string> = {
-    context: t('section.context'),
-    turns: t('section.turns'),
+    gauge: t('section.gauge'),
     skills: t('section.skills'),
     mcp: t('section.mcp'),
   }
 
   /** Title-bar glyphs; the same set the rows inside already use. */
   const icons: Record<CardId, React.ReactNode> = {
-    context: <DonutIcon />,
-    turns: <PulseIcon />,
+    gauge: <DonutIcon />,
     skills: <BoltIcon />,
     mcp: <ServerIcon />,
   }
@@ -409,10 +429,7 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   const dragHint = t('titlebar.dragHint')
 
   const summaries: Partial<Record<CardId, string>> = {
-    context: hasContext
-      ? t('summary.cache', { percent: hit.hasInput ? fmtPercent(hit.percent) : '—' })
-      : undefined,
-    turns: stats?.turns !== undefined ? t('summary.turns', { count: stats.turns }) : undefined,
+    gauge: spent !== undefined ? fmtMillions(spent) : undefined,
     skills: hasActivity ? t('skills.running') : undefined,
     mcp: hasServers
       ? `${mcp.servers.filter((server) => server.connected).length}/${mcp.servers.length}`
@@ -422,54 +439,53 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   /** The body of one card, in play mode. */
   function cardBody(id: CardId): React.ReactNode {
     switch (id) {
-      case 'context': {
+      case 'gauge': {
         if (!hasContext) return <Empty>{t('empty')}</Empty>
-        const barSegments: MeterSegment[] | null =
-          segments === null
-            ? null
-            : [
-                { id: 'system', percent: (segments.system / segments.total) * 100, color: SEGMENT_COLORS.system, label: t('row.system') },
-                { id: 'tools', percent: (segments.tools / segments.total) * 100, color: SEGMENT_COLORS.tools, label: t('row.toolDefs') },
-                { id: 'messages', percent: (segments.messages / segments.total) * 100, color: SEGMENT_COLORS.messages, label: t('row.messages') },
-                { id: 'free', percent: (segments.free / segments.total) * 100, color: SEGMENT_COLORS.free, label: t('row.free') },
-              ]
+        // The app's own context popover, card for card: one measured headline,
+        // the window split as legend rows, then the two 2×2 groups.
         return (
-          <div>
-            {percent !== null ? (
-              <div className="osp-usage">
-                <span className="osp-usage-head">{t('usage.used', { percent: fmtPercent(percent) })}</span>
-                <span className="osp-usage-figure">
-                  {fmtTokens(pressure?.pressureTokens)} / {fmtTokens(pressure?.contextWindow)}
-                </span>
-              </div>
-            ) : null}
+          <div className="osp-gauge">
+            <div className="osp-gauge-head">
+              <span className="osp-gauge-title">
+                {t('gauge.used', { percent: percent !== null ? fmtPercentInt(percent) : '—' })}
+              </span>
+              <span className="osp-gauge-figure">
+                {typeof pressure?.pressureTokens === 'number' ? `-${fmtTokens(pressure.pressureTokens)}` : '—'} /{' '}
+                {fmtTokens(pressure?.contextWindow)}
+              </span>
+            </div>
             {percent !== null ? <Meter percent={percent} color={SEGMENT_COLORS.messages} /> : null}
-            {barSegments ? <StackedMeter segments={barSegments} /> : null}
-            <Row icon={<GaugeIcon />} label={t('row.window')} value={fmtTokens(pressure?.contextWindow)} />
-            <Row icon={<DonutIcon />} label={t('row.measured')} value={fmtTokens(pressure?.pressureTokens)} />
-            <Row label={t('row.projected')} value={fmtTokens(pressure?.projectedTokens)} muted />
-            <Row icon={<CoinIcon />} label={t('row.system')} value={fmtTokens(breakdown?.systemTokens)} />
-            <Row label={t('row.toolDefs')} value={fmtTokens(breakdown?.toolsTokens)} muted />
-            <Row label={t('row.messages')} value={fmtTokens(breakdown?.messageTokens)} muted />
-            <Row label={t('row.free')} value={segments ? fmtTokens(segments.free) : '—'} muted />
-            <Row icon={<CoinIcon />} label={t('row.cacheHit')} value={hit.hasInput ? fmtPercent(hit.percent) : '—'} />
-            <Row label={t('row.uncached')} value={fmtTokens(usage?.uncachedInputTokens)} muted />
-            <Row label={t('row.output')} value={fmtTokens(usage?.outputTokens)} muted />
-            <Row label={t('row.cacheRead')} value={fmtTokens(usage?.cacheReadTokens)} muted />
-            <Row label={t('row.cacheWrite')} value={fmtTokens(usage?.cacheWriteTokens)} muted />
-          </div>
-        )
-      }
-      case 'turns': {
-        if (!hasStats) return <Empty>{t('empty')}</Empty>
-        return (
-          <div>
-            <Row icon={<PulseIcon />} label={t('row.turns')} value={stats?.turns ?? '—'} />
-            <Row label={t('row.steps')} value={stats?.steps ?? '—'} />
-            <Row label={t('row.llm')} value={fmtDuration(stats?.llmMs)} />
-            <Row label={t('row.tools')} value={fmtDuration(stats?.toolMs)} muted />
-            <Row label={t('row.ttft')} value={ttft(stats, fmtDuration)} muted />
-            <Row label={t('row.decode')} value={fmtRate(stats?.decodeTokens, stats?.decodeMs)} muted />
+            <div className="osp-legend">
+              <div className="osp-legend-row">
+                <span className="osp-legend-dot" style={{ backgroundColor: SEGMENT_COLORS.system }} />
+                <span className="osp-legend-label">{t('row.system')}</span>
+                <span className="osp-legend-value">{approx(breakdown?.systemTokens)}</span>
+              </div>
+              <div className="osp-legend-row">
+                <span className="osp-legend-dot" style={{ backgroundColor: SEGMENT_COLORS.tools }} />
+                <span className="osp-legend-label">{t('row.toolDefs')}</span>
+                <span className="osp-legend-value">{approx(breakdown?.toolsTokens)}</span>
+              </div>
+              <div className="osp-legend-row">
+                <span className="osp-legend-dot" style={{ backgroundColor: SEGMENT_COLORS.messages }} />
+                <span className="osp-legend-label">{t('row.messages')}</span>
+                <span className="osp-legend-value">{approx(breakdown?.messageTokens)}</span>
+              </div>
+            </div>
+            <div className="osp-group">
+              <div className="osp-group-title">{t('group.session')}</div>
+              <div className="osp-grid">
+                <GaugeCell label={t('rate.ttft')} value={avgFirstToken(stats, t)} />
+                <GaugeCell label={t('rate.tps')} value={fmtTps(stats?.decodeTokens, stats?.decodeMs)} />
+              </div>
+            </div>
+            <div className="osp-group">
+              <div className="osp-group-title">{t('group.tokens')}</div>
+              <div className="osp-grid">
+                <GaugeCell label={t('row.cacheHit')} value={hit.hasInput ? fmtPercentInt(hit.percent) : '—'} />
+                <GaugeCell label={t('row.total')} value={fmtMillions(spent)} />
+              </div>
+            </div>
           </div>
         )
       }
@@ -530,7 +546,7 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
     }
   }
 
-  const anyContent = hasContext || hasStats || hasActivity || hasServers
+  const anyContent = hasContext || hasActivity || hasServers
 
   return (
     <div className="osp-card">

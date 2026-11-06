@@ -5,8 +5,16 @@
  * localStorage rather than component state — the user's arrangement survives.
  */
 
-export const CARD_IDS = ['context', 'turns', 'skills', 'mcp'] as const
+export const CARD_IDS = ['gauge', 'skills', 'mcp'] as const
 export type CardId = (typeof CARD_IDS)[number]
+
+/**
+ * Ids an earlier version stored. `context` was the readout card; the gauge that
+ * replaced it keeps the slot but starts visible — it is a new card, so an old
+ * "hidden" flag for the card it replaced must not keep it out of sight. Any
+ * other retired id (`turns`) simply drops out: no card claims its slot.
+ */
+const LEGACY_IDS: Record<string, CardId> = { context: 'gauge' }
 
 export interface CardLayout {
   /** Every known card id, in display order. */
@@ -30,7 +38,8 @@ function normalize(raw: unknown): CardLayout {
   const seen = new Set<CardId>()
   const order: CardId[] = []
   if (Array.isArray(record.order)) {
-    for (const id of record.order) {
+    for (const entry of record.order) {
+      const id = typeof entry === 'string' ? (LEGACY_IDS[entry] ?? entry) : entry
       if (isCardId(id) && !seen.has(id)) {
         seen.add(id)
         order.push(id)
@@ -38,6 +47,7 @@ function normalize(raw: unknown): CardLayout {
     }
   }
   for (const id of CARD_IDS) if (!seen.has(id)) order.push(id)
+  // Legacy ids fail `isCardId`, so a stale hidden flag dies with the id it named.
   const hidden = Array.isArray(record.hidden) ? record.hidden.filter(isCardId) : []
   return { order, hidden }
 }

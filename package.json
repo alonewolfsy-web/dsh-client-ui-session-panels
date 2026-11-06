@@ -1,7 +1,7 @@
 {
   "name": "dsh-client-ui-session-panels",
-  "version": "0.2.2",
-  "description": "Panel-style session suite for the DSH right sidebar: context pressure with cache analytics, turn stats, skills in flight, MCP server control. Title bars reorder cards by pointer drag with a live ghost and insertion line. Re-authored from openchamber's context panel and work-status panel against native DSH data surfaces.",
+  "version": "0.2.3",
+  "description": "Panel-style session suite for the DSH right sidebar: a usage card mirroring the app's context popover (gauge, composition legend, session stats, token total), skills in flight, MCP server control. Title bars reorder cards by pointer drag with a live ghost and insertion line. Re-authored from openchamber's context panel and work-status panel against native DSH data surfaces.",
   "type": "module",
   "main": "lib/index.js",
   "scripts": {

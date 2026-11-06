@@ -26,11 +26,10 @@ await build({
 const require = createRequire(import.meta.url)
 const {
   fmtTokens,
-  fmtPercent,
-  fmtDuration,
-  fmtRate,
+  fmtPercentInt,
+  fmtMillions,
+  fmtTps,
   computeCacheHit,
-  contextSegments,
   pressurePercent,
   splitMcpToolName,
   foldActiveSkills,
@@ -55,23 +54,18 @@ assert.equal(fmtTokens(undefined), '—')
 assert.equal(fmtTokens(-5), '0')
 ok('fmtTokens compact forms and edges')
 
-/* ---- fmtPercent ---- */
-assert.equal(fmtPercent(6.4), '6.4%')
-assert.equal(fmtPercent(1200), '999.0%')
-assert.equal(fmtPercent(undefined), '—')
-ok('fmtPercent clamps runaway readings')
-
-/* ---- fmtDuration / fmtRate ---- */
-assert.equal(fmtDuration(840), '840ms')
-assert.equal(fmtDuration(1200), '1.2s')
-assert.equal(fmtDuration(72000), '1m 12s')
-// Rounding must carry into the next minute, never print "1m 60s"
-assert.equal(fmtDuration(119700), '2m 0s')
-assert.equal(fmtDuration(179950), '3m 0s')
-assert.equal(fmtDuration(0), '—')
-assert.equal(fmtRate(1681, 41000), '~41 tok/s')
-assert.equal(fmtRate(100, 0), '—')
-ok('fmtDuration and fmtRate')
+/* ---- percent / millions / throughput ---- */
+assert.equal(fmtPercentInt(87.8), '88%')
+assert.equal(fmtPercentInt(6.4), '6%')
+assert.equal(fmtPercentInt(1200), '100%')
+assert.equal(fmtPercentInt(undefined), '—')
+assert.equal(fmtMillions(1234567), '1.23M')
+assert.equal(fmtMillions(493000), '0.49M')
+assert.equal(fmtMillions(0), '0.00M')
+assert.equal(fmtMillions(undefined), '—')
+assert.equal(fmtTps(1681, 41000), '41 tok/s')
+assert.equal(fmtTps(100, 0), '—')
+ok('fmtPercentInt, fmtMillions and fmtTps: whole percent, fixed M unit, plain tok/s')
 
 /* ---- computeCacheHit (ported from openchamber computeCacheHitRate) ---- */
 let hit = computeCacheHit({ uncachedInputTokens: 12300, outputTokens: 4100, cacheReadTokens: 88200, cacheWriteTokens: 0 })
@@ -82,25 +76,6 @@ assert.deepEqual(computeCacheHit(undefined), { percent: 0, hasInput: false })
 assert.equal(computeCacheHit({ uncachedInputTokens: 0, outputTokens: 0, cacheReadTokens: 200, cacheWriteTokens: 0 }).percent, 100)
 assert.equal(computeCacheHit({ uncachedInputTokens: 100, outputTokens: 0, cacheReadTokens: -50, cacheWriteTokens: 0 }).percent, 0)
 ok('cache hit: ported formula, hasInput flag, clamps')
-
-/* ---- contextSegments ---- */
-let seg = contextSegments({ contextWindow: 256000 }, { systemTokens: 12050, toolsTokens: 8400, messageTokens: 24700 })
-assert.equal(seg.total, 256000)
-assert.equal(seg.free, 256000 - 45150)
-ok('segments: window is the denominator, free is the remainder')
-
-seg = contextSegments({ contextWindow: 100 }, { systemTokens: 12050, toolsTokens: 0, messageTokens: 0 })
-assert.equal(seg.total, 12050)
-assert.equal(seg.free, 0)
-ok('segments: split past the window grows the total')
-
-seg = contextSegments({}, { systemTokens: 500, toolsTokens: 0, messageTokens: 0 })
-assert.equal(seg.total, 500)
-assert.equal(seg.free, 0)
-ok('segments: unknown window, the split is its own denominator')
-
-assert.equal(contextSegments({}, {}), null)
-ok('segments: nothing to draw yields null')
 
 /* ---- pressurePercent ---- */
 assert.equal(pressurePercent({ pressureTokens: 16384, projectedTokens: 18200, contextWindow: 256000 }), 16384 / 256000 * 100)
@@ -177,15 +152,29 @@ try {
 ok('fetchers reject on http errors and missing fetch')
 
 /* ---- layout: persistence + normalization ---- */
-assert.deepEqual(CARD_IDS, ['context', 'turns', 'skills', 'mcp'])
-const order = moveCard([...CARD_IDS], 'context', 'mcp')
-assert.deepEqual(order, ['turns', 'skills', 'context', 'mcp']) // insert before the target, per session-cards semantics
-assert.deepEqual(moveCard(order, 'context', 'context'), order)
+assert.deepEqual(CARD_IDS, ['gauge', 'skills', 'mcp'])
+const order = moveCard([...CARD_IDS], 'gauge', 'mcp')
+assert.deepEqual(order, ['skills', 'gauge', 'mcp']) // insert before the target, per session-cards semantics
+assert.deepEqual(moveCard(order, 'gauge', 'gauge'), order)
 // No localStorage in node: readLayout falls back to the default layout.
 const layout = readLayout()
 assert.deepEqual(layout.order, [...CARD_IDS])
 assert.deepEqual(layout.hidden, [])
 writeLayout(layout) // must not throw without localStorage
 ok('layout: moveCard, node fallback default, write without storage is safe')
+
+/* ---- layout: a save from the retired cards carries over ---- */
+globalThis.localStorage = {
+  getItem: (key) =>
+    key === 'dsh.sessionPanels.layout.v1'
+      ? JSON.stringify({ order: ['turns', 'context', 'skills'], hidden: ['context', 'turns'] })
+      : null,
+  setItem: () => {},
+}
+const migrated = readLayout()
+assert.deepEqual(migrated.order, ['gauge', 'skills', 'mcp']) // gauge keeps the readout card's slot
+assert.deepEqual(migrated.hidden, []) // the replacing card starts visible; the retired ids are gone
+delete globalThis.localStorage
+ok('layout: legacy `context` maps to `gauge`, retired `turns` drops out, stale hidden flags die')
 
 console.log(`\nunit: ${n} groups passed`)

@@ -33,35 +33,6 @@ export function DonutIcon(props: IconProps) {
   )
 }
 
-/** Window capacity. */
-export function GaugeIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <path d="M2.6 11.4a5.6 5.6 0 1 1 10.8 0" />
-      <path d="M8 11.4 10.6 7.4" />
-    </svg>
-  )
-}
-
-/** Token usage. */
-export function CoinIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <circle cx="8" cy="8" r="5.6" />
-      <path d="M8 5.2v5.6M6.3 6.6h2.5a1.2 1.2 0 0 1 0 2.4H6.6a1.2 1.2 0 0 0 0 2.4h2.6" />
-    </svg>
-  )
-}
-
-/** Turn stats. */
-export function PulseIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <path d="M1.8 8h2.6l1.4-3.4L7.8 12l1.6-4 1.2 2.6h3.6" />
-    </svg>
-  )
-}
-
 /** Skills in flight. */
 export function BoltIcon(props: IconProps) {
   return (

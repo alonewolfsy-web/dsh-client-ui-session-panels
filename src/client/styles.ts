@@ -159,43 +159,6 @@ export const PANEL_CSS = `
 }
 .osp-chevron { flex: none; color: var(--dsw-alias-label-tertiary, light-dark(#8a8a8a, #787878)); }
 
-.osp-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 28px;
-  padding: 0 4px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  text-align: start;
-  color: var(--dsw-alias-label-tertiary, light-dark(#8a8a8a, #787878));
-  font-size: 13px;
-}
-button.osp-row { cursor: pointer; }
-button.osp-row:hover { background: var(--dsw-alias-interactive-bg-hover, light-dark(rgba(0,0,0,.04), rgba(255,255,255,.06))); }
-button.osp-row:focus-visible {
-  outline: 2px solid var(--dsw-focus-ring-color, light-dark(#3b82f6, #7aa7ff));
-  outline-offset: -2px;
-}
-.osp-icon { flex: none; display: inline-flex; width: 14px; height: 14px; align-items: center; justify-content: center; }
-.osp-label {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.osp-value {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-secondary, light-dark(#5c5c5c, #a0a0a0));
-}
-
 .osp-meter {
   height: 4px;
   margin: 0 4px 6px;
@@ -204,8 +167,6 @@ button.osp-row:focus-visible {
   background: var(--dsw-alias-border-l2, light-dark(rgba(0,0,0,.08), rgba(255,255,255,.1)));
 }
 .osp-meter-fill { height: 100%; border-radius: 999px; transition: width 240ms ease; }
-.osp-meter-stacked { display: flex; gap: 2px; }
-.osp-meter-seg { display: block; height: 100%; border-radius: 999px; min-width: 3px; }
 
 .osp-empty {
   padding: 24px 12px;
@@ -239,23 +200,97 @@ button.osp-row:focus-visible {
   background: color-mix(in srgb, var(--dsw-alias-brand-primary, #4d6bfe) 12%, transparent);
 }
 
-/* Occupancy headline: percentage left, absolute pair right. */
-.osp-usage {
+/* Context card: the app's own context popover, card for card — a measured
+   headline, one fill bar, three legend rows, then two 2×2 readout groups. */
+.osp-gauge {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 4px 4px;
+}
+.osp-gauge-head {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 0 4px 6px;
 }
-.osp-usage-head {
-  font-size: 13px;
+.osp-gauge-title {
+  font-size: 12px;
   font-weight: 600;
   color: var(--dsw-alias-label-primary, light-dark(#1a1a1a, #e8e8e8));
 }
-.osp-usage-figure {
+.osp-gauge-figure {
   margin-inline-start: auto;
-  font-size: 12px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--dsw-alias-label-tertiary, light-dark(#8a8a8a, #787878));
+}
+.osp-gauge .osp-meter { margin: 6px 0 9px; }
+
+.osp-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.osp-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 16px;
+}
+.osp-legend-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+.osp-legend-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, light-dark(#5c5c5c, #a0a0a0));
+}
+.osp-legend-value {
+  flex: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary, light-dark(#1a1a1a, #e8e8e8));
+}
+
+/* Grouped readouts: caption above value, two columns to fit the narrow pane. */
+.osp-group { margin-top: 12px; }
+.osp-group-title {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, light-dark(#1a1a1a, #e8e8e8));
+}
+.osp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+}
+.osp-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.osp-cell-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary, light-dark(#8a8a8a, #787878));
+}
+.osp-cell-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary, light-dark(#1a1a1a, #e8e8e8));
 }
 
 /* Arrangement mode: drag to reorder, checkbox to show or hide. */

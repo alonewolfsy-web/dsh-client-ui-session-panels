@@ -56,35 +56,24 @@ const zhDict = {
   'manage.done': '完成',
   'titlebar.dragHint': '拖动标题栏调整卡片顺序',
   empty: '这个会话还没有可显示的数据',
-  'section.context': '上下文',
-  'section.turns': '轮次统计',
+  'section.gauge': '统计',
   'section.skills': '正在调用',
   'section.mcp': 'MCP 服务器',
-  'usage.used': '已使用 {percent}',
-  'row.window': '窗口',
-  'row.measured': '实测占用',
-  'row.projected': '预计占用',
+  'gauge.used': '上文已用 {percent}',
+  'group.session': '会话统计',
+  'group.tokens': 'Token 用量',
+  'rate.ttft': '首 token 平均（TTFT）',
+  'rate.tps': '输出速度（TPS）',
   'row.system': '系统提示词',
   'row.toolDefs': '工具定义',
-  'row.messages': '消息',
-  'row.free': '剩余空间',
-  'row.cacheHit': '缓存命中率',
-  'row.uncached': '未缓存输入',
-  'row.output': '输出',
-  'row.cacheRead': '缓存读取',
-  'row.cacheWrite': '缓存写入',
-  'row.turns': '轮次',
-  'row.steps': '步骤',
-  'row.llm': '模型耗时',
-  'row.tools': '工具耗时',
-  'row.ttft': '首 token',
-  'row.decode': '解码速率',
+  'row.messages': '对话消息',
+  'row.cacheHit': '缓存命中',
+  'row.total': 'Token 总量',
+  'unit.seconds': ' 秒',
   'skills.none': '没有正在调用的技能',
   'skills.running': '运行中',
   'mcp.none': '没有配置 MCP 服务器',
   'mcp.reconnectTitle': '重连 {server}',
-  'summary.turns': '{count} 轮',
-  'summary.cache': '命中 {percent}',
   'error.unknown': '状态未知',
 }
 const t = (key, params) => {
@@ -189,47 +178,46 @@ assert.ok(html.includes('osp-tb-btn') && html.includes('osp-section'), 'collapsi
 ok('card shell, toolbar, sections render')
 
 /* title bars + drag affordance */
-assert.equal(html.split('class="osp-titlebar"').length - 1, 4, 'expected exactly four title bars')
+assert.equal(html.split('class="osp-titlebar"').length - 1, 3, 'expected exactly three title bars')
 assert.ok(html.includes('osp-grip'), 'title bar grip missing')
 assert.ok(html.includes('osp-tb-icon'), 'title bar icon missing')
-assert.ok(html.includes('data-card-id="context"') && html.includes('data-card-id="mcp"'), 'card slots missing ids')
+assert.ok(html.includes('data-card-id="gauge"') && html.includes('data-card-id="mcp"'), 'card slots missing ids')
 assert.ok(html.includes('拖动标题栏调整卡片顺序'), 'drag hint missing')
-ok('title bars: four bars, grip, icon, drag hint, per-card drag slots')
+ok('title bars: three bars, grip, icon, drag hint, per-card drag slots')
 
-/* context card numbers */
-assert.ok(html.includes('已使用 6.4%'), 'usage headline missing (16384/256000 = 6.4%)')
-assert.ok(html.includes('16.4K / 256K'), 'measured/window figures missing')
-assert.ok(html.includes('命中 87.8%'), 'cache hit summary missing (88200/100500)')
-assert.ok(html.includes('缓存命中率') && html.includes('87.8%'), 'cache hit row missing')
-assert.ok(html.includes('>256K<'), 'window row missing')
-assert.ok(html.includes('>16.4K<'), 'measured row missing')
-assert.ok(html.includes('>18.2K<'), 'projected row missing')
-assert.ok(html.includes('>12.1K<'), 'system tokens missing (12050)')
-assert.ok(html.includes('>8.4K<'), 'tool tokens missing (8400)')
-assert.ok(html.includes('>24.7K<'), 'message tokens missing (24700)')
-assert.ok(html.includes('>211K<'), 'free tokens missing (256000-45150=210850)')
-assert.ok(html.includes('>88.2K<'), 'cache read row missing')
-assert.ok(html.includes('>12.3K<'), 'uncached input row missing')
-assert.ok(html.includes('>4.1K<'), 'output tokens missing')
-assert.ok(html.includes('>0<'), 'cache write row missing')
-ok('context card: headline, window split, cache hit and token rows')
+/* gauge card: the app's context popover, reproduced */
+assert.ok(html.includes('>统计<'), 'gauge title missing')
+assert.ok(html.includes('上文已用 6%'), 'gauge headline missing (16384/256000 = 6.4% → 6%)')
+assert.ok(html.includes('-16.4K / 256K'), 'measured/window figures missing')
+assert.ok(
+  html.includes('~12.1K') && html.includes('~8.4K') && html.includes('~24.7K'),
+  'legend figures missing (12050 / 8400 / 24700)',
+)
+assert.ok(
+  html.includes('系统提示词') && html.includes('工具定义') && html.includes('对话消息'),
+  'legend labels missing',
+)
+assert.ok(html.includes('osp-legend-dot'), 'legend colour dots missing')
+ok('gauge card: title, headline, window pair and three legend rows')
 
-/* segment bar */
-assert.ok(html.includes('osp-meter-stacked'), 'stacked bar missing')
-assert.ok(html.includes('osp-meter-seg'), 'bar segments missing')
-assert.ok(html.includes('系统提示词 4.7%'), 'system segment title missing (12050/256000)')
-assert.ok(html.includes('剩余空间 82.4%'), 'free segment title missing (210850/256000)')
-ok('context bar: four segments laid out by window share')
+/* gauge card: the two readout groups */
+assert.ok(html.includes('会话统计') && html.includes('Token 用量'), 'group titles missing')
+assert.ok(html.includes('0.8 秒'), 'average first token missing (2400ms / 3 steps)')
+assert.ok(html.includes('>41 tok/s<'), 'output speed missing (1681 tok / 41000ms)')
+assert.ok(!html.includes('模型用时') && !html.includes('工具调用用时'), 'timing cells should be gone')
+assert.ok(html.includes('>88%<'), 'cache hit percentage missing (88200/100500 = 87.8% → 88%)')
+assert.ok(html.includes('Token 总量'), 'total token label missing')
+assert.ok(html.includes('0.10M'), 'token total missing (12300 + 88200 + 4100 = 104600 → 0.10M)')
+assert.ok(
+  !html.includes('未缓存输入') && !html.includes('缓存读取') && !html.includes('>输出<'),
+  'the split token cells should be gone',
+)
+ok('gauge card: session stats keep TTFT + TPS, tokens collapse into one total in M')
 
-/* turns card */
-assert.ok(html.includes('轮次统计'), 'turns section missing')
-assert.ok(html.includes('3 轮'), 'turn summary missing')
-assert.ok(html.includes('>3<') && html.includes('>12<'), 'turn/steps rows missing')
-assert.ok(html.includes('1m 12s'), 'llm duration missing (72000ms)')
-assert.ok(html.includes('34s'), 'tool duration missing (34200ms rounds to 34s over ten seconds)')
-assert.ok(html.includes('800ms'), 'ttft missing (2400ms/3)')
-assert.ok(html.includes('~41 tok/s'), 'decode rate missing (1681 tok / 41000ms)')
-ok('turns card: stats, durations, ttft, decode rate')
+/* the retired turn-stats card leaves nothing behind */
+assert.ok(!html.includes('轮次统计'), 'turns card still rendered')
+assert.ok(!html.includes('data-card-id="turns"'), 'turns slot still rendered')
+ok('turns card removed from the body and the layout')
 
 /* skills + mcp from the SSR fixtures */
 assert.ok(html.includes('正在调用') && html.includes('运行中'), 'skills section missing')
@@ -256,7 +244,7 @@ assert.ok(emptyHtml.includes('没有配置 MCP 服务器'), 'mcp empty missing')
 ok('empty session renders the empty states, not a blank card')
 
 /* locale coverage of the rendered strings */
-const missing = ['osp-card', 'osp-mcp-row', 'osp-switch-btn', 'osp-usage-head', 'osp-summary', 'osp-titlebar'].filter((cls) => !html.includes(cls))
+const missing = ['osp-card', 'osp-mcp-row', 'osp-switch-btn', 'osp-gauge-title', 'osp-cell-value', 'osp-summary', 'osp-titlebar'].filter((cls) => !html.includes(cls))
 assert.deepEqual(missing, [], `stylesheet classes missing from markup: ${missing.join(', ')}`)
 ok('styles are exercised by the rendered markup (ensureStyles classes)')
 
