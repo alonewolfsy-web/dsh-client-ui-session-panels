@@ -434,11 +434,61 @@ export const PANEL_CSS = `
 
 const STYLE_ID = 'dsh-session-panels-style'
 
-/** Mount the stylesheet once per document. */
-export function ensureStyles(doc: Document | undefined = typeof document === 'undefined' ? undefined : document): void {
-  if (!doc || doc.getElementById(STYLE_ID)) return
+/** Built once, then adopted by every root that renders the panel. */
+let sheet: CSSStyleSheet | null | undefined
+
+/**
+ * A constructed sheet, where the engine has one. Hosts that sandbox extension
+ * UI often serve a CSP without `style-src 'unsafe-inline'`, which silently
+ * drops a <style> tag; an adopted sheet is not subject to that directive.
+ */
+function constructedSheet(): CSSStyleSheet | null {
+  if (sheet !== undefined) return sheet
+  sheet = null
+  try {
+    if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
+      const made = new CSSStyleSheet()
+      made.replaceSync(PANEL_CSS)
+      sheet = made
+    }
+  } catch {
+    sheet = null
+  }
+  return sheet
+}
+
+function adopt(root: Document | ShadowRoot): void {
+  const made = constructedSheet()
+  if (!made) return
+  try {
+    if (!root.adoptedStyleSheets.includes(made)) {
+      root.adoptedStyleSheets = [...root.adoptedStyleSheets, made]
+    }
+  } catch {
+    /* engine without adoptable sheets: the tag below carries the rules */
+  }
+}
+
+function install(root: Document | ShadowRoot): void {
+  adopt(root)
+  if (root.querySelector(`#${STYLE_ID}`)) return
+  const doc = root.nodeType === 9 ? (root as Document) : (root as ShadowRoot).ownerDocument
+  if (!doc) return
   const node = doc.createElement('style')
   node.id = STYLE_ID
   node.textContent = PANEL_CSS
-  doc.head.appendChild(node)
+  const parent = root.nodeType === 9 ? (root as Document).head : root
+  parent?.appendChild(node)
+}
+
+/**
+ * Mount the stylesheet into every root the panel renders in: the document, and
+ * the shadow root when the host isolates the extension. Called with the card
+ * element so the root is the one the panel actually lives in.
+ */
+export function ensureStyles(target?: Element | null): void {
+  if (typeof document === 'undefined') return
+  install(document)
+  const root = target?.getRootNode()
+  if (root && root !== document && root.nodeType === 11) install(root as ShadowRoot)
 }

@@ -25,7 +25,7 @@
 npm install     # 首次
 npm run build   # 生成 lib/client.js、lib/index.js
 npm run unit    # 11 组纯函数断言
-npm run drag    # 9 组 jsdom 交互断言（捕获时机/ghost 跟手/插入侧向/点击守卫/阈值/卸载清理/会话切换）
+npm run drag    # 10 组 jsdom 交互断言（捕获时机/ghost 跟手/插入侧向/点击守卫/阈值/卸载清理/会话切换/Shadow DOM 样式注入）
 npm run smoke   # 13 组渲染断言（不需要启动应用）
 npm run typecheck
 ```
@@ -34,7 +34,7 @@ npm run typecheck
 
 ## 安装（只支持 GitHub）
 
-插件以 GitHub 仓库 + tag 的形式分发（当前 **v0.2.3**）：构建产物 `lib/` 已入库，安装端不需要构建；git 依赖由 lockfile 钉死到具体 commit，应用启动时的依赖对账直接命中 pnpm store，**不会每次启动重解包**。
+插件以 GitHub 仓库 + tag 的形式分发（当前 **v0.2.4**）：构建产物 `lib/` 已入库，安装端不需要构建；git 依赖由 lockfile 钉死到具体 commit，应用启动时的依赖对账直接命中 pnpm store，**不会每次启动重解包**。
 
 ### 1. 装进 profile
 
@@ -43,9 +43,9 @@ node scripts/switch-to-git.mjs            # 默认 ~/.dsh/profiles/desktop，可
 ```
 
 或用应用内：侧栏**插件** → **添加插件** → 填
-`https://github.com/alonewolfsy-web/dsh-client-ui-session-panels#v0.2.3`
+`https://github.com/alonewolfsy-web/dsh-client-ui-session-panels#v0.2.4`
 
-脚本做四件事：`git ls-remote` 确认 tag 存在（不存在绝不碰 profile）→ `pnpm add github:alonewolfsy-web/dsh-client-ui-session-panels#v0.2.3` → 校验「清单 / 落盘副本 / 版本号」三层一致 → 删掉遗留的 `vendor` tgz。
+脚本做四件事：`git ls-remote` 确认 tag 存在（不存在绝不碰 profile）→ `pnpm add github:alonewolfsy-web/dsh-client-ui-session-panels#v0.2.4` → 校验「清单 / 落盘副本 / 版本号」三层一致 → 删掉遗留的 `vendor` tgz。
 
 > **已知误报**：插件已装好后再在 UI 里点一次安装，会报「无法从依赖变更中确定安装了哪一个包」。原因是 pnpm 看到 `Already up to date`、依赖零变更，管理器无法从前后 diff 里识别包名。这不是安装失败——升级请打新 tag 后跑 `switch:git`；要用 UI 装，先卸载再装。
 
@@ -63,6 +63,7 @@ node scripts/switch-to-git.mjs            # 默认 ~/.dsh/profiles/desktop，可
 
 ## 版本
 
+- **v0.2.4** — 修复「装到隔离环境里整卡没样式」：样式表改为注入面板自身的 root（Shadow DOM 也生效），并额外 adopt 构造式样式表，宿主 CSP 拦内联 `<style>` 时仍能拿到规则；拖拽浮层与命中测试跟随面板所在 root。
 - **v0.2.3** — 上下文卡换成应用内浮层原样版式，更名为「统计」；「Token 用量」只留缓存命中与 Token 总量（M），「会话统计」只留首 token 平均与输出速度；删除「轮次统计」卡（数据与统计卡重复）；卡片 id `context` → `gauge`，旧存档的排位保留、旧隐藏标记作废。
 - **v0.2.2** — 拖拽 ghost 只克隆标题栏，落点只剩插入线，标签页标题缩为「卡片」。
 - **v0.2.1** — 首个 GitHub tag 分发版本。

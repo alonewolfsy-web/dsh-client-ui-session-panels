@@ -304,4 +304,21 @@ ok('guard: the click trailing a drag is swallowed, the card stays open')
   ok('session switch: in-flight rows reset instead of lingering')
 }
 
+/* ---- 10: a host that isolates the panel in a shadow root still gets styles ---- */
+{
+  const host = document.createElement('div')
+  document.body.appendChild(host)
+  const shadow = host.attachShadow({ mode: 'open' })
+  const mount = document.createElement('div')
+  shadow.appendChild(mount)
+  const shadowRoot = ReactDOM.createRoot(mount)
+  flushSync(() =>
+    shadowRoot.render(React.createElement(Body, { sessionId: 's1', useProjection: (key) => projections[key], t })),
+  )
+  assert.ok(shadow.querySelector('#dsh-session-panels-style'), 'shadow root never received the stylesheet')
+  assert.ok(shadow.querySelector('.osp-card'), 'panel did not render inside the shadow root')
+  shadowRoot.unmount()
+  ok('shadow root: the stylesheet lands beside the panel, not only in document.head')
+}
+
 console.log(`\ndrag: ${n} groups passed`)

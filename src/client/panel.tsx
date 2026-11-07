@@ -186,6 +186,23 @@ const GaugeCell: React.FC<{ label: string; value: string }> = ({ label, value })
   </div>
 )
 
+/** The root the panel lives in: the document, or the shadow root a host may isolate it in. */
+function rootOf(node: Element | null): Document | ShadowRoot {
+  const root = node?.getRootNode()
+  return root && root.nodeType === 11 ? (root as ShadowRoot) : document
+}
+
+/** elementFromPoint, descending through shadow boundaries the host may have. */
+function pointAt(x: number, y: number): Element | null {
+  let el = document.elementFromPoint(x, y)
+  while (el?.shadowRoot) {
+    const inner = el.shadowRoot.elementFromPoint(x, y)
+    if (!inner || inner === el) break
+    el = inner
+  }
+  return el
+}
+
 /**
  * The panel body.
  *
@@ -196,7 +213,16 @@ const GaugeCell: React.FC<{ label: string; value: string }> = ({ label, value })
  */
 export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   const { useProjection, t, sessionId, client, initialActivity, initialServers } = props
-  ensureStyles()
+  const cardRef = React.useRef<HTMLDivElement | null>(null)
+
+  // Styles must exist before the first paint and must land in the root the
+  // panel renders in. A ref callback runs with the node already attached — an
+  // insertion effect would be too early to read the root, and a host that
+  // isolates extension UI in a shadow root never sees document.head.
+  const attachCard = React.useCallback((node: HTMLDivElement | null) => {
+    cardRef.current = node
+    if (node) ensureStyles(node)
+  }, [])
 
   const pressure = useProjection('contextPressure')
   const usage = useProjection('tokenUsage')
@@ -325,7 +351,12 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
             ghost.style.top = `${rect.top}px`
             ghost.style.width = `${rect.width}px`
           }
-          document.body.appendChild(ghost)
+          // The ghost lives in the panel's own root: inside a shadow root the
+          // document body would drop the host's styles and the carried bar
+          // would arrive unformatted.
+          const host = rootOf(cardRef.current)
+          if (host.nodeType === 11) host.appendChild(ghost)
+          else document.body.appendChild(ghost)
           ghostRef.current = ghost
           setDragging(id)
           setLift(id)
@@ -335,7 +366,7 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
         if (ghost) {
           ghost.style.transform = `translate(${event.clientX - state.x}px, ${event.clientY - state.y}px)`
         }
-        const under = document.elementFromPoint(event.clientX, event.clientY)
+        const under = pointAt(event.clientX, event.clientY)
         const slot = under?.closest('[data-card-id]')
         const raw = slot?.getAttribute('data-card-id') ?? null
         const target =
@@ -549,7 +580,7 @@ export const SessionPanelsBody: React.FC<SessionPanelsProps> = (props) => {
   const anyContent = hasContext || hasActivity || hasServers
 
   return (
-    <div className="osp-card">
+    <div className="osp-card" ref={attachCard}>
       <div className="osp-toolbar">
         <button
           type="button"

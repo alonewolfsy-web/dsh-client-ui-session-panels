@@ -257,3 +257,13 @@
 - 卡片 id `context` -> `gauge`：旧存档排位沿用原槽位，旧 hidden 标记随旧 id 作废（否则新卡会继承"已隐藏"而不显示）；
   `turns` 退役，读档时直接丢弃。
 - 门禁 unit11 / smoke13 / drag9 / tsc 全绿；README 安装命令钉到 v0.2.3 并补版本表。
+
+## 步骤 28：v0.2.4 —— 隔离宿主下的样式注入（2026-11-07）
+- 现象：装到另一台机器后整卡无样式，内容纯文字堆叠。根因是样式只写进 `document.head`；宿主把插件 UI 放进
+  Shadow DOM 时样式被隔离，或 CSP 无 `style-src unsafe-inline` 时内联 style 被丢弃。
+- 修法：`ensureStyles(ref)` 改为注入面板自身 root（`getRootNode()`，ShadowRoot 也写），并额外 adopt 一张
+  `CSSStyleSheet`（`replaceSync`），CSP 拦 style 标签时规则仍生效。调用点从 render 里的副作用换成 ref 回调——
+  insertion effect 早于 ref 挂载，读不到 root。
+- 连带：拖拽 ghost 挂到面板所在 root（否则 shadow 里克隆的标题栏无样式）；`elementFromPoint` 递归下钻 shadow root，
+  否则插入位置永远算不出来。
+- 回归：drag 增第 10 组「shadow root 里能拿到 style 标签且卡片正常渲染」。门禁 unit11 / smoke13 / drag10 / tsc 全绿。
