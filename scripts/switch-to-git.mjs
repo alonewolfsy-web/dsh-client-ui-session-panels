@@ -44,18 +44,43 @@ const tag = `v${version}`
 const spec = `github:${owner}/${repo}#${tag}`
 
 // 1. Remote check first: a missing tag must leave the working install intact.
+//    `git ls-remote` speaks to github.com directly; on networks where that host
+//    is reset but the API is reachable, fall back to the REST refs endpoint so
+//    a good release is not reported as missing.
 console.log(`checking ${repoUrl} for tag ${tag} ...`)
 const ls = spawnSync('git', ['ls-remote', '--tags', repoUrl, `refs/tags/${tag}`], {
   encoding: 'utf8',
   timeout: 60_000,
 })
 if (ls.status !== 0 || !ls.stdout.trim()) {
-  console.error(`tag ${tag} not found on ${repoUrl}`)
-  if (ls.stderr?.trim()) console.error(`  ${ls.stderr.trim().split('\n')[0]}`)
-  console.error('push it first:  git push origin main --tags')
-  process.exit(1)
+  const why = ls.stderr?.trim().split('\n')[0] ?? `exit ${ls.status}`
+  console.log(`  git ls-remote unavailable (${why}); asking the REST API`)
+  if (!(await tagViaApi(owner, repo, tag))) {
+    console.error(`tag ${tag} not found on ${repoUrl}`)
+    console.error('push it first:  git push origin main --tags')
+    process.exit(1)
+  }
 }
 console.log(`  found ${tag}`)
+
+async function tagViaApi(owner, repo, tag) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/git/ref/tags/${tag}`
+  try {
+    const res = await fetch(url, {
+      headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-switch-to-git' },
+      signal: AbortSignal.timeout(30_000),
+    })
+    if (!res.ok) {
+      console.log(`  api ${res.status} for ${url}`)
+      return false
+    }
+    const body = await res.json()
+    return typeof body?.object?.sha === 'string'
+  } catch (err) {
+    console.log(`  api unreachable: ${err.message}`)
+    return false
+  }
+}
 
 // 2. pnpm owns the manifest + lockfile + node_modules rewrite.
 console.log(`pnpm add ${spec} in ${profile}`)
